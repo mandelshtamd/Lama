@@ -13,11 +13,9 @@ extern size_t __gc_stack_top, __gc_stack_bottom;
   bool flag = false;                                                                               \
   flag      = __gc_stack_top == 0;                                                                 \
   if (flag) { __gc_stack_top = (size_t)__builtin_frame_address(0); }                               \
-  assert(__gc_stack_top != 0);                                                                     \
-  assert(__builtin_frame_address(0) <= (void *)__gc_stack_top);
+  assert(__gc_stack_top != 0);                                                                     
 
 #define POST_GC()                                                                                  \
-  assert(__builtin_frame_address(0) <= (void *)__gc_stack_top);                                    \
   if (flag) { __gc_stack_top = 0; }
 
 static void vfailure (char *s, va_list args) {
@@ -987,19 +985,6 @@ extern void Lfailure (char *s, ...) {
   vfailure(s, args);
 }
 
-extern void LprintfPerror (char *s, ...) {
-  va_list args = (va_list)BOX(NULL);
-
-  ASSERT_STRING("printfPerror:1", s);
-
-  va_start(args, s);
-  fix_unboxed(s, args);
-
-  if (vfprintf(stderr, s, args) < 0) { failure("printfPerror (...): %s\n", strerror(errno)); }
-
-  fflush(stderr);
-}
-
 extern void Bmatch_failure (void *v, char *fname, int line, int col) {
   createStringBuf();
   printValue(v);
@@ -1264,8 +1249,8 @@ extern void set_args (int argc, char *argv[]) {
   POST_GC();
 
   global_sysargs = p;
-  global_stdout  = stdout;
-  global_stderr  = stderr;
+  global_stdout = stdout;
+  global_stderr = stderr;
 
   push_extra_root((void **)&global_sysargs);
 }
