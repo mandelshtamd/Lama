@@ -6,7 +6,8 @@ RUNTIME=../runtime
 LAMA_ROOT=..
 LAMAC=lamac
 TEST_FILES=../performance
-BYTECODE_ANALYSIS=../build/bytecode_analysis
+BYTERUN_FOLDER=../byterun
+COMMON=common
 
 all: $(TARGET)
 
@@ -18,8 +19,11 @@ lama_runtime:
 $(TARGET).o: $(TARGET).cpp mkbuild
 	$(CXX) $(CXXFLAGS) -c $(TARGET).cpp -o $(BUILDS)/$(TARGET).o
 
-$(TARGET): $(TARGET).o lama_runtime
-	$(CXX) $(CXXFLAGS) $(BUILDS)/$(TARGET).o $(RUNTIME)/runtime.a -o $(BUILDS)/$(TARGET) 
+$(COMMON).o: $(BYTERUN_FOLDER)/$(COMMON).c mkbuild
+	$(CC) $(CXXFLAGS) -c $(BYTERUN_FOLDER)/$(COMMON).c -o $(BUILDS)/$(COMMON).o
+
+$(TARGET): $(TARGET).o $(COMMON).o lama_runtime
+	$(CXX) $(CXXFLAGS) $(BUILDS)/$(TARGET).o $(BUILDS)/$(COMMON).o -o $(BUILDS)/$(TARGET) 
 
 test: $(TARGET)
 	$(MAKE) -C $(TEST_FILES) bytecode_analysis

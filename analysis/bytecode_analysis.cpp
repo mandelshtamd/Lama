@@ -13,53 +13,11 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "../interpreter/interpreter.h"
 #include "bytecode_analysis.h"
+#include "../byterun/common.h"
 #include "lib.h"
 
 uint8_t* eof;
-
-static bytefile* readFile(char* fname) {
-    FILE* f = fopen(fname, "rb");
-
-    if (!f) {
-        failure("ERROR: unable to open file %s\n", strerror(errno));
-    }
-
-    if (fseek(f, 0, SEEK_END) == -1) {
-        failure("ERROR: unable to seek file end %s\n", strerror(errno));
-    }
-
-    long size = ftell(f);
-    if (size == -1) {
-        failure("ERROR: unable to get file size %s\n", strerror(errno));
-    }
-
-    size_t fileSize = sizeof(bytefile) + size;
-    bytefile* file = (bytefile*)malloc(fileSize);
-    if (!file) {
-        failure("ERROR: unable to allocate memory.\n");
-    }
-    eof = (unsigned char*)file + fileSize;
-
-    if (file == 0) {
-        failure("ERROR: unable to allocate memory.\n");
-    }
-
-    rewind(f);
-
-    if (size != fread(&file->string_table_size, 1, size, f)) {
-        failure("%s\n", strerror(errno));
-    }
-
-    fclose(f);
-
-    file->string_ptr =
-        &file->buffer[file->public_symbols_number * 2 * sizeof(int)];
-    file->public_ptr = (int*)file->buffer;
-    file->code_ptr = (const uint8_t*)&file->string_ptr[file->string_table_size];
-    return file;
-}
 
 struct ByteReader {
     ByteReader(uint8_t* eof, bytefile* bf)
@@ -93,7 +51,7 @@ struct ByteReader {
     }
 
     const char* getStringByPosition(int pos) {
-        if (unsigned(pos) >= unsigned(bf->string_table_size)) {
+        if (unsigned(pos) >= unsigned(bf->stringtab_size)) {
             failure("ERROR: no such index in string pool.\n");
         }
         return &bf->string_ptr[pos];
@@ -275,12 +233,6 @@ struct ByteReader {
 
     const uint8_t* readInstruction() {
 
-        const char* ops[] = {"+", "-",  "*",  "/",  "%",  "<", "<=",
-                             ">", ">=", "==", "!=", "&&", "!!"};
-        const char* pats[] = {"=str", "#string", "#array", "#sexp",
-                              "#ref", "#val",    "#fun"};
-        const char* lds[] = {"LD", "LDA", "ST"};
-
         uint8_t opcode = nextByte();
         uint8_t highPart = (opcode & 0xF0) >> 4;
         uint8_t lowPart = opcode & 0x0F;
@@ -394,7 +346,8 @@ int main(int argc, char* argv[]) {
     if (argc < 2) {
         failure("ERROR: provide bytecode file.\n");
     }
-    bytefile* bf = readFile(argv[1]);
+    bytefile* bf = read_file(argv[1]);
+    eof = (unsigned char*)bf + malloc_usable_size(bf);
     ByteCodeAnalyzer analyzer(bf);
     analyzer.displayFrequency();
     return 0;
