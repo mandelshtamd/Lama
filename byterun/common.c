@@ -69,7 +69,7 @@ bytefile* read_file(char* fname) {
     return file;
 }
 
-const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip, int (*printer)(FILE *, const char *, ...)) {
+const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip, int (*print)(FILE *, const char *, ...)) {
 # define INT    (ip += sizeof (int32_t), *(int32_t*)(ip - sizeof (int32_t)))
 # define BYTE   *(ip++)
 # define STRING get_string (bf, INT)
@@ -81,61 +81,61 @@ const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip,
 
     switch (h) {
         case 15:
-            printer(f, "STOP");
+            print(f, "STOP");
             break;
         case 0:
-            printer(f, "BINOP\t%s", ops[l-1]);
+            print(f, "BINOP\t%s", ops[l-1]);
             break;
 
         case 1:
             switch (l) {
                 case  0:
-                    printer(f, "CONST\t%d", INT);
+                    print(f, "CONST\t%d", INT);
                     break;
 
                 case  1:
-                    printer(f, "STRING\t%s", STRING);
+                    print(f, "STRING\t%s", STRING);
                     break;
 
                 case  2:
-                    printer(f, "SEXP\t%s ", STRING);
-                    printer(f, "%d", INT);
+                    print(f, "SEXP\t%s ", STRING);
+                    print(f, "%d", INT);
                     break;
 
                 case  3:
-                    printer(f, "STI");
+                    print(f, "STI");
                     break;
 
                 case  4:
-                    printer(f, "STA");
+                    print(f, "STA");
                     break;
 
                 case  5:
-                    printer(f, "JMP\t0x%.8x", INT);
+                    print(f, "JMP\t0x%.8x", INT);
                     break;
 
                 case  6:
-                    printer(f, "END");
+                    print(f, "END");
                     break;
 
                 case  7:
-                    printer(f, "RET");
+                    print(f, "RET");
                     break;
 
                 case  8:
-                    printer(f, "DROP");
+                    print(f, "DROP");
                     break;
 
                 case  9:
-                    printer(f, "DUP");
+                    print(f, "DUP");
                     break;
 
                 case 10:
-                    printer(f, "SWAP");
+                    print(f, "SWAP");
                     break;
 
                 case 11:
-                    printer(f, "ELEM");
+                    print(f, "ELEM");
                     break;
 
                 default:
@@ -146,12 +146,12 @@ const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip,
         case 2:
         case 3:
         case 4:
-            printer(f, "%s\t", lds[h-2]);
+            print(f, "%s\t", lds[h-2]);
             switch (l) {
-                case 0: printer(f, "G(%d)", INT); break;
-                case 1: printer(f, "L(%d)", INT); break;
-                case 2: printer(f, "A(%d)", INT); break;
-                case 3: printer(f, "C(%d)", INT); break;
+                case 0: print(f, "G(%d)", INT); break;
+                case 1: print(f, "L(%d)", INT); break;
+                case 2: print(f, "A(%d)", INT); break;
+                case 3: print(f, "C(%d)", INT); break;
                 default: FAIL;
             }
             break;
@@ -159,32 +159,32 @@ const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip,
         case 5:
             switch (l) {
                 case  0:
-                    printer(f, "CJMPz\t0x%.8x", INT);
+                    print(f, "CJMPz\t0x%.8x", INT);
                     break;
 
                 case  1:
-                    printer(f, "CJMPnz\t0x%.8x", INT);
+                    print(f, "CJMPnz\t0x%.8x", INT);
                     break;
 
                 case  2:
-                    printer(f, "BEGIN\t%d ", INT);
-                    printer(f, "%d", INT);
+                    print(f, "BEGIN\t%d ", INT);
+                    print(f, "%d", INT);
                     break;
 
                 case  3:
-                    printer(f, "CBEGIN\t%d ", INT);
-                    printer(f, "%d", INT);
+                    print(f, "CBEGIN\t%d ", INT);
+                    print(f, "%d", INT);
                     break;
 
                 case  4:
-                    printer(f, "CLOSURE\t0x%.8x", INT);
+                    print(f, "CLOSURE\t0x%.8x", INT);
                     {int n = INT;
                         for (int i = 0; i<n; i++) {
                             switch (BYTE) {
-                                case 0: printer(f, "G(%d)", INT); break;
-                                case 1: printer(f, "L(%d)", INT); break;
-                                case 2: printer(f, "A(%d)", INT); break;
-                                case 3: printer(f, "C(%d)", INT); break;
+                                case 0: print(f, "G(%d)", INT); break;
+                                case 1: print(f, "L(%d)", INT); break;
+                                case 2: print(f, "A(%d)", INT); break;
+                                case 3: print(f, "C(%d)", INT); break;
                                 default: FAIL;
                             }
                         }
@@ -192,30 +192,30 @@ const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip,
                     break;
 
                 case  5:
-                    printer(f, "CALLC\t%d", INT);
+                    print(f, "CALLC\t%d", INT);
                     break;
 
                 case  6:
-                    printer(f, "CALL\t0x%.8x ", INT);
-                    printer(f,  "%d", INT);
+                    print(f, "CALL\t0x%.8x ", INT);
+                    print(f,  "%d", INT);
                     break;
 
                 case  7:
-                    printer(f, "TAG\t%s ", STRING);
-                    printer(f, "%d", INT);
+                    print(f, "TAG\t%s ", STRING);
+                    print(f, "%d", INT);
                     break;
 
                 case  8:
-                    printer(f, "ARRAY\t%d", INT);
+                    print(f, "ARRAY\t%d", INT);
                     break;
 
                 case  9:
-                    printer(f, "FAIL\t%d", INT);
-                    printer(f, "%d", INT);
+                    print(f, "FAIL\t%d", INT);
+                    print(f, "%d", INT);
                     break;
 
                 case 10:
-                    printer(f, "LINE\t%d", INT);
+                    print(f, "LINE\t%d", INT);
                     break;
 
                 default:
@@ -224,29 +224,29 @@ const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip,
             break;
 
         case 6:
-            printer(f, "PATT\t%s", pats[l]);
+            print(f, "PATT\t%s", pats[l]);
             break;
 
         case 7: {
             switch (l) {
                 case 0:
-                    printer(f, "CALL\tLread");
+                    print(f, "CALL\tLread");
                     break;
 
                 case 1:
-                    printer(f, "CALL\tLwrite");
+                    print(f, "CALL\tLwrite");
                     break;
 
                 case 2:
-                    printer(f, "CALL\tLlength");
+                    print(f, "CALL\tLlength");
                     break;
 
                 case 3:
-                    printer(f, "CALL\tLstring");
+                    print(f, "CALL\tLstring");
                     break;
 
                 case 4:
-                    printer(f, "CALL\tBarray\t%d", INT);
+                    print(f, "CALL\tBarray\t%d", INT);
                     break;
 
                 default:

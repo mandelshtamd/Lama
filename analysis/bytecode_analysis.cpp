@@ -35,7 +35,7 @@ struct Instruction {
     const uint8_t* end;
 };
 
-int empty_output(FILE *f, const char *value, ...) {
+int empty_print(FILE *f, const char *value, ...) {
     return 0;
 }
 
@@ -62,7 +62,7 @@ struct ByteCodeAnalyzer {
         const uint8_t* ip = bf->code_ptr;
 
         while (ip < eof) {
-            const uint8_t* insnEnd = disassemble_instruction(nullptr, bf, ip, &empty_output);
+            const uint8_t* insnEnd = disassemble_instruction(nullptr, bf, ip, &empty_print);
             Instruction instruction(ip, insnEnd);
             ip = insnEnd;
             byteCodes.try_emplace(instruction, 0).first->second++;
