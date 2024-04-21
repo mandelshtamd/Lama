@@ -35,6 +35,10 @@ struct Instruction {
     const uint8_t* end;
 };
 
+int empty_output(FILE *f, const char *value, ...) {
+    return 0;
+}
+
 struct ByteCodeAnalyzer {
     ByteCodeAnalyzer(bytefile* bf) : bf(bf) {}
     void displayFrequency() {
@@ -45,7 +49,7 @@ struct ByteCodeAnalyzer {
                   [](auto& a, auto& b) { return a.second > b.second; });
         for (auto& [instruction, count] : sortedByteCodes) {
             std::cout << count << " times\t";
-            disassemble_instruction(stdout, bf, instruction.getBegin());
+            disassemble_instruction(stdout, bf, instruction.getBegin(), &fprintf);
             std::cout << std::endl;
         }
     }
@@ -58,7 +62,7 @@ struct ByteCodeAnalyzer {
         const uint8_t* ip = bf->code_ptr;
 
         while (ip < eof) {
-            const uint8_t* insnEnd = disassemble_instruction(nullptr, bf, ip);
+            const uint8_t* insnEnd = disassemble_instruction(nullptr, bf, ip, &empty_output);
             Instruction instruction(ip, insnEnd);
             ip = insnEnd;
             byteCodes.try_emplace(instruction, 0).first->second++;

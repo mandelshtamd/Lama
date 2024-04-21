@@ -69,17 +69,7 @@ bytefile* read_file(char* fname) {
     return file;
 }
 
-void optional_out(FILE *f, const char *pat, ...) {
-    if (f == NULL) {
-        return;
-    }
-
-    va_list args;
-    va_start(args, pat);
-    vfprintf(f, pat, args);
-}
-
-const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip) {
+const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip, int (*printer)(FILE *, const char *, ...)) {
 # define INT    (ip += sizeof (int32_t), *(int32_t*)(ip - sizeof (int32_t)))
 # define BYTE   *(ip++)
 # define STRING get_string (bf, INT)
@@ -91,61 +81,61 @@ const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip)
 
     switch (h) {
         case 15:
-            optional_out(f, "STOP");
+            printer(f, "STOP");
             break;
         case 0:
-            optional_out(f, "BINOP\t%s", ops[l-1]);
+            printer(f, "BINOP\t%s", ops[l-1]);
             break;
 
         case 1:
             switch (l) {
                 case  0:
-                    optional_out(f, "CONST\t%d", INT);
+                    printer(f, "CONST\t%d", INT);
                     break;
 
                 case  1:
-                    optional_out(f, "STRING\t%s", STRING);
+                    printer(f, "STRING\t%s", STRING);
                     break;
 
                 case  2:
-                    optional_out(f, "SEXP\t%s ", STRING);
-                    optional_out(f, "%d", INT);
+                    printer(f, "SEXP\t%s ", STRING);
+                    printer(f, "%d", INT);
                     break;
 
                 case  3:
-                    optional_out(f, "STI");
+                    printer(f, "STI");
                     break;
 
                 case  4:
-                    optional_out(f, "STA");
+                    printer(f, "STA");
                     break;
 
                 case  5:
-                    optional_out(f, "JMP\t0x%.8x", INT);
+                    printer(f, "JMP\t0x%.8x", INT);
                     break;
 
                 case  6:
-                    optional_out(f, "END");
+                    printer(f, "END");
                     break;
 
                 case  7:
-                    optional_out(f, "RET");
+                    printer(f, "RET");
                     break;
 
                 case  8:
-                    optional_out(f, "DROP");
+                    printer(f, "DROP");
                     break;
 
                 case  9:
-                    optional_out(f, "DUP");
+                    printer(f, "DUP");
                     break;
 
                 case 10:
-                    optional_out(f, "SWAP");
+                    printer(f, "SWAP");
                     break;
 
                 case 11:
-                    optional_out(f, "ELEM");
+                    printer(f, "ELEM");
                     break;
 
                 default:
@@ -156,12 +146,12 @@ const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip)
         case 2:
         case 3:
         case 4:
-            optional_out(f, "%s\t", lds[h-2]);
+            printer(f, "%s\t", lds[h-2]);
             switch (l) {
-                case 0: optional_out(f, "G(%d)", INT); break;
-                case 1: optional_out(f, "L(%d)", INT); break;
-                case 2: optional_out(f, "A(%d)", INT); break;
-                case 3: optional_out(f, "C(%d)", INT); break;
+                case 0: printer(f, "G(%d)", INT); break;
+                case 1: printer(f, "L(%d)", INT); break;
+                case 2: printer(f, "A(%d)", INT); break;
+                case 3: printer(f, "C(%d)", INT); break;
                 default: FAIL;
             }
             break;
@@ -169,32 +159,32 @@ const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip)
         case 5:
             switch (l) {
                 case  0:
-                    optional_out(f, "CJMPz\t0x%.8x", INT);
+                    printer(f, "CJMPz\t0x%.8x", INT);
                     break;
 
                 case  1:
-                    optional_out(f, "CJMPnz\t0x%.8x", INT);
+                    printer(f, "CJMPnz\t0x%.8x", INT);
                     break;
 
                 case  2:
-                    optional_out(f, "BEGIN\t%d ", INT);
-                    optional_out(f, "%d", INT);
+                    printer(f, "BEGIN\t%d ", INT);
+                    printer(f, "%d", INT);
                     break;
 
                 case  3:
-                    optional_out(f, "CBEGIN\t%d ", INT);
-                    optional_out(f, "%d", INT);
+                    printer(f, "CBEGIN\t%d ", INT);
+                    printer(f, "%d", INT);
                     break;
 
                 case  4:
-                    optional_out(f, "CLOSURE\t0x%.8x", INT);
+                    printer(f, "CLOSURE\t0x%.8x", INT);
                     {int n = INT;
                         for (int i = 0; i<n; i++) {
                             switch (BYTE) {
-                                case 0: optional_out(f, "G(%d)", INT); break;
-                                case 1: optional_out(f, "L(%d)", INT); break;
-                                case 2: optional_out(f, "A(%d)", INT); break;
-                                case 3: optional_out(f, "C(%d)", INT); break;
+                                case 0: printer(f, "G(%d)", INT); break;
+                                case 1: printer(f, "L(%d)", INT); break;
+                                case 2: printer(f, "A(%d)", INT); break;
+                                case 3: printer(f, "C(%d)", INT); break;
                                 default: FAIL;
                             }
                         }
@@ -202,30 +192,30 @@ const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip)
                     break;
 
                 case  5:
-                    optional_out(f, "CALLC\t%d", INT);
+                    printer(f, "CALLC\t%d", INT);
                     break;
 
                 case  6:
-                    optional_out(f, "CALL\t0x%.8x ", INT);
-                    optional_out(f,  "%d", INT);
+                    printer(f, "CALL\t0x%.8x ", INT);
+                    printer(f,  "%d", INT);
                     break;
 
                 case  7:
-                    optional_out(f, "TAG\t%s ", STRING);
-                    optional_out(f, "%d", INT);
+                    printer(f, "TAG\t%s ", STRING);
+                    printer(f, "%d", INT);
                     break;
 
                 case  8:
-                    optional_out(f, "ARRAY\t%d", INT);
+                    printer(f, "ARRAY\t%d", INT);
                     break;
 
                 case  9:
-                    optional_out(f, "FAIL\t%d", INT);
-                    optional_out(f, "%d", INT);
+                    printer(f, "FAIL\t%d", INT);
+                    printer(f, "%d", INT);
                     break;
 
                 case 10:
-                    optional_out(f, "LINE\t%d", INT);
+                    printer(f, "LINE\t%d", INT);
                     break;
 
                 default:
@@ -234,29 +224,29 @@ const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip)
             break;
 
         case 6:
-            optional_out(f, "PATT\t%s", pats[l]);
+            printer(f, "PATT\t%s", pats[l]);
             break;
 
         case 7: {
             switch (l) {
                 case 0:
-                    optional_out(f, "CALL\tLread");
+                    printer(f, "CALL\tLread");
                     break;
 
                 case 1:
-                    optional_out(f, "CALL\tLwrite");
+                    printer(f, "CALL\tLwrite");
                     break;
 
                 case 2:
-                    optional_out(f, "CALL\tLlength");
+                    printer(f, "CALL\tLlength");
                     break;
 
                 case 3:
-                    optional_out(f, "CALL\tLstring");
+                    printer(f, "CALL\tLstring");
                     break;
 
                 case 4:
-                    optional_out(f, "CALL\tBarray\t%d", INT);
+                    printer(f, "CALL\tBarray\t%d", INT);
                     break;
 
                 default:

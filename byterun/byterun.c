@@ -25,8 +25,8 @@ void dump_file (FILE *f, bytefile *bf) {
   fprintf (f, "Code:\n");
 
   uint8_t *ip = bf->code_ptr;
-  while (disassemble_instruction(NULL, bf, ip) != 0xFF) {
-    ip = disassemble_instruction(f, bf, ip);
+  while (disassemble_instruction(NULL, bf, ip, &fprintf) != 0xFF) {
+    ip = disassemble_instruction(f, bf, ip, &fprintf);
     fprintf(f, "\n");
   }
 }
