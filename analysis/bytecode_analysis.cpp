@@ -43,8 +43,6 @@ struct ByteCodeAnalyzer {
                                                               byteCodes.end());
         std::sort(sortedByteCodes.begin(), sortedByteCodes.end(),
                   [](auto& a, auto& b) { return a.second > b.second; });
-        const size_t bufSize = 1024;
-        std::vector<char> buffer(bufSize);
         for (auto& [instruction, count] : sortedByteCodes) {
             std::cout << count << " times\t";
             disassemble_instruction(stdout, bf, instruction.getBegin());
@@ -60,7 +58,7 @@ struct ByteCodeAnalyzer {
         const uint8_t* ip = bf->code_ptr;
 
         while (ip < eof) {
-            uint8_t* insnEnd = disassemble_instruction(nullptr, bf, ip);
+            const uint8_t* insnEnd = disassemble_instruction(nullptr, bf, ip);
             Instruction instruction(ip, insnEnd);
             ip = insnEnd;
             byteCodes.try_emplace(instruction, 0).first->second++;

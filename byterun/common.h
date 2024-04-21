@@ -115,7 +115,7 @@ void option_out(FILE *f, const char *format, ...);
    extern "C" {
    #endif
 
-   uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t* ip);
+   const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip);
 
    #ifdef __cplusplus
    }

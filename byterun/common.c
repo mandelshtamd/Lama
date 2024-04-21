@@ -79,7 +79,7 @@ void optional_out(FILE *f, const char *pat, ...) {
     vfprintf(f, pat, args);
 }
 
-uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip) {
+const uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t *ip) {
 # define INT    (ip += sizeof (int32_t), *(int32_t*)(ip - sizeof (int32_t)))
 # define BYTE   *(ip++)
 # define STRING get_string (bf, INT)
