@@ -111,6 +111,14 @@ void failure (char *s, ...);
 
 void option_out(FILE *f, const char *format, ...);
 
-uint8_t disassemble_instruction(FILE *f, bytefile *bf, const char *ip);
+#ifdef __cplusplus
+   extern "C" {
+   #endif
+
+   uint8_t* disassemble_instruction(FILE *f, bytefile *bf, const uint8_t* ip);
+
+   #ifdef __cplusplus
+   }
+#endif
 
 # endif
