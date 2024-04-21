@@ -109,8 +109,8 @@ void failure (char *s, ...);
    }
 #endif
 
-typedef void (*ByteCodeHandler)(FILE* file, const char* format, ...);
+void option_out(FILE *f, const char *format, ...);
 
-void read_h1_operation(uint8_t operation, uint8_t *ip, FILE* output, bytefile* bf, ByteCodeHandler handler);
+uint8_t disassemble_instruction(FILE *f, bytefile *bf, const char *ip);
 
 # endif

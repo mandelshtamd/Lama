@@ -69,58 +69,205 @@ bytefile* read_file(char* fname) {
     return file;
 }
 
-void read_h1_operation(uint8_t operation, uint8_t *ip, FILE* output, bytefile* bf, ByteCodeHandler handler) {
-    switch (operation) {
-        case CONST:
-            handler(output, "CONST\t%d", (ip += sizeof (int), *(int*)(ip - sizeof (int))));
+void optional_out(FILE *f, const char *pat, ...) {
+    if (f == NULL) {
+        return;
+    }
+
+    va_list args;
+    va_start(args, pat);
+    vfprintf(f, pat, args);
+}
+
+const char* disassemble_instruction(FILE *f, bytefile *bf, const char *ip) {
+# define INT    (ip += sizeof (int32_t), *(int32_t*)(ip - sizeof (int32_t)))
+# define BYTE   *(ip++)
+# define STRING get_string (bf, INT)
+# define FAIL   failure ("ERROR: invalid opcode %d-%d\n", h, l)
+
+    char x = BYTE,
+            h = (x & 0xF0) >> 4,
+            l = x & 0x0F;
+
+    switch (h) {
+        case 15:
+            optional_out(f, "STOP");
+            break;
+        case 0:
+            optional_out(f, "BINOP\t%s", ops[l-1]);
             break;
 
-        case BSTRING:
-            handler(output, "STRING\t%s", get_string(bf, (ip += sizeof (int), *(int*)(ip - sizeof (int)))));
+        case 1:
+            switch (l) {
+                case  0:
+                    optional_out(f, "CONST\t%d", INT);
+                    break;
+
+                case  1:
+                    optional_out(f, "STRING\t%s", STRING);
+                    break;
+
+                case  2:
+                    optional_out(f, "SEXP\t%s ", STRING);
+                    optional_out(f, "%d", INT);
+                    break;
+
+                case  3:
+                    optional_out(f, "STI");
+                    break;
+
+                case  4:
+                    optional_out(f, "STA");
+                    break;
+
+                case  5:
+                    optional_out(f, "JMP\t0x%.8x", INT);
+                    break;
+
+                case  6:
+                    optional_out(f, "END");
+                    break;
+
+                case  7:
+                    optional_out(f, "RET");
+                    break;
+
+                case  8:
+                    optional_out(f, "DROP");
+                    break;
+
+                case  9:
+                    optional_out(f, "DUP");
+                    break;
+
+                case 10:
+                    optional_out(f, "SWAP");
+                    break;
+
+                case 11:
+                    optional_out(f, "ELEM");
+                    break;
+
+                default:
+                    FAIL;
+            }
             break;
 
-        case BSEXP:
-            handler(output, "SEXP\t%s ", get_string(bf, (ip += sizeof (int), *(int*)(ip - sizeof (int)))));
-            handler(output, "%d", (ip += sizeof (int), *(int*)(ip - sizeof (int))));
+        case 2:
+        case 3:
+        case 4:
+            optional_out(f, "%s\t", lds[h-2]);
+            switch (l) {
+                case 0: optional_out(f, "G(%d)", INT); break;
+                case 1: optional_out(f, "L(%d)", INT); break;
+                case 2: optional_out(f, "A(%d)", INT); break;
+                case 3: optional_out(f, "C(%d)", INT); break;
+                default: FAIL;
+            }
             break;
 
-        case STI:
-            handler(output, "STI");
+        case 5:
+            switch (l) {
+                case  0:
+                    optional_out(f, "CJMPz\t0x%.8x", INT);
+                    break;
+
+                case  1:
+                    optional_out(f, "CJMPnz\t0x%.8x", INT);
+                    break;
+
+                case  2:
+                    optional_out(f, "BEGIN\t%d ", INT);
+                    optional_out(f, "%d", INT);
+                    break;
+
+                case  3:
+                    optional_out(f, "CBEGIN\t%d ", INT);
+                    optional_out(f, "%d", INT);
+                    break;
+
+                case  4:
+                    optional_out(f, "CLOSURE\t0x%.8x", INT);
+                    {int n = INT;
+                        for (int i = 0; i<n; i++) {
+                            switch (BYTE) {
+                                case 0: optional_out(f, "G(%d)", INT); break;
+                                case 1: optional_out(f, "L(%d)", INT); break;
+                                case 2: optional_out(f, "A(%d)", INT); break;
+                                case 3: optional_out(f, "C(%d)", INT); break;
+                                default: FAIL;
+                            }
+                        }
+                    };
+                    break;
+
+                case  5:
+                    optional_out(f, "CALLC\t%d", INT);
+                    break;
+
+                case  6:
+                    optional_out(f, "CALL\t0x%.8x ", INT);
+                    optional_out(f,  "%d", INT);
+                    break;
+
+                case  7:
+                    optional_out(f, "TAG\t%s ", STRING);
+                    optional_out(f, "%d", INT);
+                    break;
+
+                case  8:
+                    optional_out(f, "ARRAY\t%d", INT);
+                    break;
+
+                case  9:
+                    optional_out(f, "FAIL\t%d", INT);
+                    optional_out(f, "%d", INT);
+                    break;
+
+                case 10:
+                    optional_out(f, "LINE\t%d", INT);
+                    break;
+
+                default:
+                    FAIL;
+            }
             break;
 
-        case STA:
-            handler(output, "STA");
+        case 6:
+            optional_out(f, "PATT\t%s", pats[l]);
             break;
 
-        case JMP:
-            handler(output, "JMP\t0x%.8x", (ip += sizeof (int), *(int*)(ip - sizeof (int))));
-            break;
+        case 7: {
+            switch (l) {
+                case 0:
+                    optional_out(f, "CALL\tLread");
+                    break;
 
-        case END:
-            handler(output, "END");
-            break;
+                case 1:
+                    optional_out(f, "CALL\tLwrite");
+                    break;
 
-        case RET:
-            handler(output, "RET");
-            break;
+                case 2:
+                    optional_out(f, "CALL\tLlength");
+                    break;
 
-        case DROP:
-            handler(output, "DROP");
-            break;
+                case 3:
+                    optional_out(f, "CALL\tLstring");
+                    break;
 
-        case DUP:
-            handler(output, "DUP");
-            break;
+                case 4:
+                    optional_out(f, "CALL\tBarray\t%d", INT);
+                    break;
 
-        case SWAP:
-            handler(output, "SWAP");
-            break;
-
-        case ELEM:
-            handler(output, "ELEM");
+                default:
+                    FAIL;
+            }
+        }
             break;
 
         default:
-            failure("ERROR: invalid opcode\n");
+            FAIL;
     }
+
+    return ip;
 }
